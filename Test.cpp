@@ -58,12 +58,26 @@ namespace ClassEnum
 
 }
 
-enum EEE
+
+class CL1
 {
-    Value = 0,
-    Other = 10
+public:
+    ENUM_DECLARE(ABC, int,
+                 A = 10, B, C)
 };
 
+ENUM_DECLARE_NS(EEE, int,
+    Value = 0,
+    Other = 10
+);
+
+namespace NS1
+{
+    ENUM_DECLARE_NS(NNN, int,
+                    A = 0,
+                    B,
+                    C)
+}
 
 
 int main()
@@ -100,12 +114,16 @@ int main()
 //        cout << endl;
 //    }
 
+    EnumInfo<CL1::ABC> abc;
+    EnumInfo<CL1::ABC> abc1;
+    EnumInfo<CL1::ABC> abc2;
+
     const EEE aa[] = {Value, Other};
-    const auto ba = getParsedData<EEE>();
+    const auto ba = getParsedData(CL1::ABC());
     std::cout << ba.enumName << std::endl;
     for (const auto& b: ba.nameByVal)
     {
         std::cout << b.first << " " << b.second << std::endl;
     }
-    bool bb;
+    std::cout << std::endl;
 }
