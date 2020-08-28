@@ -9,6 +9,13 @@
 #include <optional>
 #include <stdexcept>
 
+
+template<typename Enum>
+class EnumInfo;
+
+namespace _enum_info_private
+{
+
 template<typename Enum>
 struct Adaptor
 {
@@ -36,9 +43,6 @@ constexpr bool isIdentChar(char c)
            (c >= '0' && c <= '9') ||
            (c == '_');
 }
-
-template<typename Enum>
-class EnumInfo;
 
 template<typename Enum>
 struct ParsedData
@@ -127,6 +131,8 @@ private:
     }
 };
 
+} // namespace _enum_info_private
+
 // Declare an enumeration inside a class
 #define ENUM_DECLARE( enumName, enumType, ... )\
                               ENUM_INFO_DETAIL_MAKE( class, enumName, enumType, __VA_ARGS__ )
@@ -146,15 +152,15 @@ private:
         __VA_ARGS__                                             \
     };                                                              \
     ENUM_INFO_DETAIL_SPEC_##spec                                        \
-    const ParsedData<enumName>& getParsedData(enumName = enumName())        \
+    const _enum_info_private::ParsedData<enumName>& getParsedData(enumName = enumName())        \
     {                                                                           \
         constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);   \
-        const Adaptor<enumName> __VA_ARGS__;                                            \
+        const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                                            \
         const enumName vals[] = { __VA_ARGS__ };                                            \
         constexpr size_t valsCount = sizeof(vals)/sizeof(enumName);                             \
         constexpr const char* const rawNames = ENUM_INFO_DETAIL_STR((__VA_ARGS__));                 \
         constexpr const size_t rawNamesSize = sizeof (ENUM_INFO_DETAIL_STR((__VA_ARGS__))) - 1;         \
-        static const ParsedData<enumName> parsedData(enumNameStr, vals, valsCount, rawNames, rawNamesSize); \
+        static const _enum_info_private::ParsedData<enumName> parsedData(enumNameStr, vals, valsCount, rawNames, rawNamesSize); \
         return parsedData;                                                                              \
     }
 
@@ -180,7 +186,7 @@ public:
         using difference_type = std::ptrdiff_t;
 
         iterator() = delete;
-        explicit iterator(typename ParsedData<Enum>::iterator it);
+        explicit iterator(typename _enum_info_private::ParsedData<Enum>::iterator it);
 
         size_t index();
         Enum value();
@@ -195,7 +201,7 @@ public:
         bool            operator!=(iterator);
 
     private:
-        typename ParsedData<Enum>::iterator _it;
+        typename _enum_info_private::ParsedData<Enum>::iterator _it;
         size_t _index;
     };
 
@@ -208,7 +214,7 @@ public:
     static reverse_iterator rend();
 
 private:
-    const static ParsedData<Enum> _parsedData;
+    const static _enum_info_private::ParsedData<Enum> _parsedData;
 
     template<typename Ret, typename Key, typename Cont>
     static std::optional<Ret> find(Key key, Cont cont);
@@ -218,7 +224,7 @@ private:
 };
 
 template<typename Enum>
-const ParsedData<Enum> EnumInfo<Enum>::_parsedData = getParsedData(Enum());
+const _enum_info_private::ParsedData<Enum> EnumInfo<Enum>::_parsedData = getParsedData(Enum());
 
 #endif // ENUMINFO_H
 
@@ -346,7 +352,7 @@ std::optional<typename EnumInfo<Enum>::EnumType> EnumInfo<Enum>::findIndex(Key k
 // ---- EnumInfo::iterator implementation ----
 
 template<typename Enum>
-EnumInfo<Enum>::iterator::iterator(typename ParsedData<Enum>::iterator it)
+EnumInfo<Enum>::iterator::iterator(typename _enum_info_private::ParsedData<Enum>::iterator it)
     : _it(it)
     , _index(0)
 {
