@@ -22,7 +22,7 @@ struct Adaptor
     Enum val;
     constexpr operator Enum() const {return val;}
 
-    Adaptor() : val(static_cast<Enum>(++_val)) {}
+    constexpr Adaptor() : val(static_cast<Enum>(++_val)) {}
     template<typename U>
     constexpr Adaptor(U i) : val(static_cast<Enum>(i)) {_val = i;}
 
@@ -45,6 +45,25 @@ constexpr bool isIdentChar(char c)
 }
 
 template<typename Enum>
+struct RawData
+{
+    constexpr RawData(const char* enumName, const Enum* vals, size_t valsCount,
+                      const char* rawNames, size_t rawNamesSize)
+        : _enumName(enumName)
+        , _rawNames(rawNames), _rawNamesSize(rawNamesSize)
+        , _valsCount(valsCount)
+        , _vals(vals)
+    {}
+
+//private:
+    const char* _enumName;
+    const char* _rawNames;
+    const size_t _rawNamesSize;
+    const size_t _valsCount;
+    const Enum* _vals;
+};
+
+template<typename Enum>
 struct ParsedData
 {
     constexpr ParsedData(const char* enumName, const Enum* vals, size_t valsCount, const char* rawNames, size_t rawNamesSize)
@@ -54,6 +73,10 @@ struct ParsedData
     {
         parseNames(vals, valsCount, rawNames, rawNamesSize);
     }
+    constexpr ParsedData(RawData<Enum> rawData)
+        : ParsedData(rawData._enumName, rawData._vals, rawData._valsCount,
+                     rawData._rawNames, rawData._rawNamesSize)
+    {}
 
     using iterator = typename std::map<Enum, std::string_view>::const_iterator;
     friend EnumInfo<Enum>;
@@ -152,16 +175,16 @@ private:
         __VA_ARGS__                                             \
     };                                                              \
     ENUM_INFO_DETAIL_SPEC_##spec                                        \
-    const _enum_info_private::ParsedData<enumName>& getParsedData(enumName = enumName())        \
+    const _enum_info_private::RawData<enumName>& getRawData(enumName = enumName())        \
     {                                                                           \
         constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);   \
         const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                                            \
-        const enumName vals[] = { __VA_ARGS__ };                                            \
+        static const enumName vals[] = { __VA_ARGS__ };                                            \
         constexpr size_t valsCount = sizeof(vals)/sizeof(enumName);                             \
         constexpr const char* const rawNames = ENUM_INFO_DETAIL_STR((__VA_ARGS__));                 \
         constexpr const size_t rawNamesSize = sizeof (ENUM_INFO_DETAIL_STR((__VA_ARGS__))) - 1;         \
-        static const _enum_info_private::ParsedData<enumName> parsedData(enumNameStr, vals, valsCount, rawNames, rawNamesSize); \
-        return parsedData;                                                                              \
+        static const _enum_info_private::RawData<enumName> rawData(enumNameStr, vals, valsCount, rawNames, rawNamesSize); \
+        return rawData;                                                                              \
     }
 
 template<typename Enum>
@@ -224,7 +247,8 @@ private:
 };
 
 template<typename Enum>
-const _enum_info_private::ParsedData<Enum> EnumInfo<Enum>::_parsedData = getParsedData(Enum());
+const _enum_info_private::ParsedData<Enum> EnumInfo<Enum>::_parsedData =
+        _enum_info_private::ParsedData<Enum>(getRawData(Enum()));
 
 #endif // ENUMINFO_H
 
