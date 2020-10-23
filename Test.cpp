@@ -68,7 +68,7 @@ int main()
     printEnum<SomeClass::TasteFlags>();
 
     std::cout << "Index for " << EnumInfo<SomeClass::TasteFlags>::valueName(SomeClass::TasteFlags::Sour).value_or("ERROR")
-              << " is " << EnumInfo<SomeClass::TasteFlags>::index(SomeClass::TasteFlags::Sour).value_or(-1) << std::endl;
+              << " is " << EnumInfo<SomeClass::TasteFlags>::index(SomeClass::TasteFlags::Sour).value_or(0) << std::endl;
     std::cout << std::endl;
 
     printEnum<SomeNamespace::Ports>();

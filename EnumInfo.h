@@ -1,5 +1,4 @@
-#ifndef ENUMINFO_H
-#define ENUMINFO_H
+#pragma once
 
 #include <string>
 #include <array>
@@ -10,7 +9,7 @@
 #include <stdexcept>
 
 
-template<typename Enum>
+template<typename Enum, typename String>
 class EnumInfo;
 
 namespace _enum_info_private
@@ -47,44 +46,45 @@ constexpr bool isIdentChar(char c)
 template<typename Enum>
 struct RawData
 {
-    constexpr RawData(const char* enumName, const Enum* vals, size_t valsCount,
+    constexpr RawData(const char* enumName, size_t enumNameSize,
+                      const Enum* vals, size_t valsCount,
                       const char* rawNames, size_t rawNamesSize)
-        : _enumName(enumName)
+        : _enumName(enumName), _enumNameSize(enumNameSize)
         , _rawNames(rawNames), _rawNamesSize(rawNamesSize)
-        , _valsCount(valsCount)
-        , _vals(vals)
+        , _vals(vals)        , _valsCount(valsCount)
     {}
 
-//private:
     const char* _enumName;
+    const size_t _enumNameSize;
     const char* _rawNames;
     const size_t _rawNamesSize;
-    const size_t _valsCount;
     const Enum* _vals;
+    const size_t _valsCount;
 };
 
-template<typename Enum>
+template<typename Enum, typename String>
 struct ParsedData
 {
-    constexpr ParsedData(const char* enumName, const Enum* vals, size_t valsCount, const char* rawNames, size_t rawNamesSize)
-        : enumName(enumName)
+    constexpr ParsedData(const char* enumName, size_t enumNameSize, const Enum* vals, size_t valsCount, const char* rawNames, size_t rawNamesSize)
+        : enumName(enumName, enumNameSize)
         , values(vals)
         , size(valsCount)
     {
         parseNames(vals, valsCount, rawNames, rawNamesSize);
     }
     constexpr ParsedData(RawData<Enum> rawData)
-        : ParsedData(rawData._enumName, rawData._vals, rawData._valsCount,
+        : ParsedData(rawData._enumName, rawData._enumNameSize,
+                     rawData._vals, rawData._valsCount,
                      rawData._rawNames, rawData._rawNamesSize)
     {}
 
-    using iterator = typename std::map<Enum, std::string_view>::const_iterator;
-    friend EnumInfo<Enum>;
+    using iterator = typename std::map<Enum, String>::const_iterator;
+    friend EnumInfo<Enum, String>;
 
 private:
-    std::string_view enumName;
-    std::multimap<Enum, std::string_view> nameByVal;
-    std::unordered_map<std::string_view, Enum> valByName;
+    String enumName;
+    std::multimap<Enum, String> nameByVal;
+    std::unordered_map<String, Enum> valByName;
     const Enum* values;
     const size_t size;
 
@@ -120,7 +120,7 @@ private:
                     state = state_skip;
                     assert(value_index < valsCount);
                     const auto value = vals[value_index];
-                    const std::string_view string{begin, size_t(end - begin)};
+                    const String string(begin, size_t(end - begin));
                     nameByVal.emplace(value, string);
                     valByName.emplace(string, value);
                     ++value_index;
@@ -178,29 +178,29 @@ private:
     const _enum_info_private::RawData<enumName>& getRawData(enumName = enumName())        \
     {                                                                           \
         constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);   \
-        const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                                            \
+        constexpr const size_t enumNameStrSize = sizeof(ENUM_INFO_DETAIL_STR(enumName)); \
+        static const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                                            \
         static const enumName vals[] = { __VA_ARGS__ };                                            \
         constexpr size_t valsCount = sizeof(vals)/sizeof(enumName);                             \
         constexpr const char* const rawNames = ENUM_INFO_DETAIL_STR((__VA_ARGS__));                 \
         constexpr const size_t rawNamesSize = sizeof (ENUM_INFO_DETAIL_STR((__VA_ARGS__))) - 1;         \
-        static const _enum_info_private::RawData<enumName> rawData(enumNameStr, vals, valsCount, rawNames, rawNamesSize); \
+        static const _enum_info_private::RawData<enumName> rawData(enumNameStr, enumNameStrSize, vals, valsCount, rawNames, rawNamesSize); \
         return rawData;                                                                              \
     }
 
-template<typename Enum>
+template<typename Enum, typename String = std::string_view>
 class EnumInfo
 {
 public:
     using EnumType = std::underlying_type_t<Enum>;
-    // TODO: сделать возможность через параметры шаблона задавать используемую строку.
-    static std::string_view      name();
+    static String      name();
     static size_t                size();
-    static std::optional<std::string_view> valueName(Enum value);
-    static std::optional<std::string_view> valueName(size_t index);
-    static std::optional<Enum>             value(std::string_view name);
+    static std::optional<String> valueName(Enum value);
+    static std::optional<String> valueName(size_t index);
+    static std::optional<Enum>             value(String name);
     static std::optional<Enum>             value(size_t index);
     static std::optional<size_t>           index(Enum value);
-    static std::optional<size_t>           index(std::string_view name);
+    static std::optional<size_t>           index(String name);
 
     struct iterator
     {
@@ -209,11 +209,11 @@ public:
         using difference_type = std::ptrdiff_t;
 
         iterator() = delete;
-        explicit iterator(typename _enum_info_private::ParsedData<Enum>::iterator it);
+        explicit iterator(typename _enum_info_private::ParsedData<Enum, String>::iterator it);
 
         size_t index();
         Enum value();
-        std::string_view name();
+        String name();
 
         value_type      operator*();
         iterator&       operator++();
@@ -224,7 +224,7 @@ public:
         bool            operator!=(iterator);
 
     private:
-        typename _enum_info_private::ParsedData<Enum>::iterator _it;
+        typename _enum_info_private::ParsedData<Enum, String>::iterator _it;
         size_t _index;
     };
 
@@ -237,7 +237,7 @@ public:
     static reverse_iterator rend();
 
 private:
-    const static _enum_info_private::ParsedData<Enum> _parsedData;
+    const static _enum_info_private::ParsedData<Enum, String> _parsedData;
 
     template<typename Ret, typename Key, typename Cont>
     static std::optional<Ret> find(Key key, Cont cont);
@@ -246,90 +246,88 @@ private:
     static std::optional<EnumType> findIndex(Key key, Cont cont);
 };
 
-template<typename Enum>
-const _enum_info_private::ParsedData<Enum> EnumInfo<Enum>::_parsedData =
-        _enum_info_private::ParsedData<Enum>(getRawData(Enum()));
-
-#endif // ENUMINFO_H
+template<typename Enum, typename String>
+const _enum_info_private::ParsedData<Enum, String> EnumInfo<Enum, String>::_parsedData =
+        _enum_info_private::ParsedData<Enum, String>(getRawData(Enum()));
 
 // ---- EnumInfo implementation ----
 
-template<typename Enum>
-std::string_view EnumInfo<Enum>::name()
+template<typename Enum, typename String>
+String EnumInfo<Enum, String>::name()
 {
     return _parsedData.enumName;
 }
 
-template<typename Enum>
-std::optional<std::string_view> EnumInfo<Enum>::valueName(Enum value)
+template<typename Enum, typename String>
+std::optional<String> EnumInfo<Enum, String>::valueName(Enum value)
 {
-    return EnumInfo::find<std::string_view>(value, _parsedData.nameByVal);
+    return EnumInfo::find<String>(value, _parsedData.nameByVal);
 }
 
-template<typename Enum>
-std::optional<std::string_view> EnumInfo<Enum>::valueName(size_t index)
+template<typename Enum, typename String>
+std::optional<String> EnumInfo<Enum, String>::valueName(size_t index)
 {
     const iterator it = fromIndex(index);
     return it.name();
 }
 
-template<typename Enum>
-std::optional<Enum> EnumInfo<Enum>::value(std::string_view name)
+template<typename Enum, typename String>
+std::optional<Enum> EnumInfo<Enum, String>::value(String name)
 {
     return EnumInfo::find<Enum>(name, _parsedData.valByName);
 }
 
-template<typename Enum>
-std::optional<Enum> EnumInfo<Enum>::value(size_t index)
+template<typename Enum, typename String>
+std::optional<Enum> EnumInfo<Enum, String>::value(size_t index)
 {
     const iterator it = fromIndex(index);
     return it.value();
 }
 
-template<typename Enum>
-std::optional<size_t> EnumInfo<Enum>::index(Enum value)
+template<typename Enum, typename String>
+std::optional<size_t> EnumInfo<Enum, String>::index(Enum value)
 {
     return findIndex(value, _parsedData.nameByVal);
 }
 
-template<typename Enum>
-std::optional<size_t> EnumInfo<Enum>::index(std::string_view name)
+template<typename Enum, typename String>
+std::optional<size_t> EnumInfo<Enum, String>::index(String name)
 {
     return findIndex(name, _parsedData.valByName);
 }
 
-template<typename Enum>
-size_t EnumInfo<Enum>::size()
+template<typename Enum, typename String>
+size_t EnumInfo<Enum, String>::size()
 {
     return _parsedData.size;
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::iterator EnumInfo<Enum>::begin()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::begin()
 {
     return iterator(_parsedData.nameByVal.begin());
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::iterator EnumInfo<Enum>::end()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::end()
 {
     return iterator(_parsedData.nameByVal.end());
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::reverse_iterator EnumInfo<Enum>::rbegin()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::reverse_iterator EnumInfo<Enum, String>::rbegin()
 {
     return iterator(_parsedData.nameByVal.begin());
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::reverse_iterator EnumInfo<Enum>::rend()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::reverse_iterator EnumInfo<Enum, String>::rend()
 {
     return iterator(_parsedData.nameByVal.end());
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::iterator EnumInfo<Enum>::fromIndex(size_t index)
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::fromIndex(size_t index)
 {
     iterator it(_parsedData.nameByVal.begin());
     for (size_t i = 0; i != index; ++i)
@@ -339,9 +337,9 @@ typename EnumInfo<Enum>::iterator EnumInfo<Enum>::fromIndex(size_t index)
     return it;
 }
 
-template<typename Enum>
+template<typename Enum, typename String>
 template<typename Ret, typename Key, typename Cont>
-std::optional<Ret> EnumInfo<Enum>::find(Key key, Cont cont)
+std::optional<Ret> EnumInfo<Enum, String>::find(Key key, Cont cont)
 {
     const auto it = cont.find(key);
     if (it != cont.end())
@@ -352,9 +350,9 @@ std::optional<Ret> EnumInfo<Enum>::find(Key key, Cont cont)
     return std::nullopt;
 }
 
-template<typename Enum>
+template<typename Enum, typename String>
 template<typename Key, typename Cont>
-std::optional<typename EnumInfo<Enum>::EnumType> EnumInfo<Enum>::findIndex(Key key, Cont cont)
+std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::findIndex(Key key, Cont cont)
 {
     const auto it = cont.find(key);
         if (it != cont.end())
@@ -375,48 +373,48 @@ std::optional<typename EnumInfo<Enum>::EnumType> EnumInfo<Enum>::findIndex(Key k
 
 // ---- EnumInfo::iterator implementation ----
 
-template<typename Enum>
-EnumInfo<Enum>::iterator::iterator(typename _enum_info_private::ParsedData<Enum>::iterator it)
+template<typename Enum, typename String>
+EnumInfo<Enum, String>::iterator::iterator(typename _enum_info_private::ParsedData<Enum, String>::iterator it)
     : _it(it)
     , _index(0)
 {
-    auto current = EnumInfo<Enum>::_parsedData.nameByVal.begin();
+    auto current = EnumInfo<Enum, String>::_parsedData.nameByVal.begin();
     while (current != _it)
     {
-        if (_index == EnumInfo<Enum>::size())
+        if (_index == EnumInfo<Enum, String>::size())
             std::out_of_range("Something gonna wrong!");
         ++current;
         ++_index;
     }
 }
 
-template<typename Enum>
-size_t EnumInfo<Enum>::iterator::index()
+template<typename Enum, typename String>
+size_t EnumInfo<Enum, String>::iterator::index()
 {
     return _index;
 }
 
-template<typename Enum>
-Enum EnumInfo<Enum>::iterator::value()
+template<typename Enum, typename String>
+Enum EnumInfo<Enum, String>::iterator::value()
 {
     return _it->first;
 }
 
-template<typename Enum>
-std::string_view EnumInfo<Enum>::iterator::name()
+template<typename Enum, typename String>
+String EnumInfo<Enum, String>::iterator::name()
 {
     return  _it->second;
 }
 
-template<typename Enum>
-typename EnumInfo<Enum>::iterator::value_type EnumInfo<Enum>::iterator::operator*()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator::value_type EnumInfo<Enum, String>::iterator::operator*()
 {
     return *this;
 }
 
 /// Prefix operator++
-template<typename Enum>
-typename EnumInfo<Enum>::iterator& EnumInfo<Enum>::iterator::operator++()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator& EnumInfo<Enum, String>::iterator::operator++()
 {
     ++_it;
     ++_index;
@@ -424,17 +422,17 @@ typename EnumInfo<Enum>::iterator& EnumInfo<Enum>::iterator::operator++()
 }
 
 /// Postfix operator++
-template<typename Enum>
-typename EnumInfo<Enum>::iterator EnumInfo<Enum>::iterator::operator++(EnumInfo::iterator::difference_type)
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::iterator::operator++(EnumInfo::iterator::difference_type)
 {
-    EnumInfo<Enum>::iterator tmp(*this);
+    EnumInfo<Enum, String>::iterator tmp(*this);
     operator++();
     return tmp;
 }
 
 /// Prefix operator--
-template<typename Enum>
-typename EnumInfo<Enum>::iterator& EnumInfo<Enum>::iterator::operator--()
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator& EnumInfo<Enum, String>::iterator::operator--()
 {
     --_it;
     --_index;
@@ -442,22 +440,22 @@ typename EnumInfo<Enum>::iterator& EnumInfo<Enum>::iterator::operator--()
 }
 
 /// Postfix operator--
-template<typename Enum>
-typename EnumInfo<Enum>::iterator EnumInfo<Enum>::iterator::operator--(EnumInfo::iterator::difference_type)
+template<typename Enum, typename String>
+typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::iterator::operator--(EnumInfo::iterator::difference_type)
 {
-    EnumInfo<Enum>::iterator tmp(*this);
+    EnumInfo<Enum, String>::iterator tmp(*this);
     operator--();
     return tmp;
 }
 
-template<typename Enum>
-bool EnumInfo<Enum>::iterator::operator==(EnumInfo::iterator other)
+template<typename Enum, typename String>
+bool EnumInfo<Enum, String>::iterator::operator==(EnumInfo::iterator other)
 {
     return _it == other._it;
 }
 
-template<typename Enum>
-bool EnumInfo<Enum>::iterator::operator!=(EnumInfo::iterator other)
+template<typename Enum, typename String>
+bool EnumInfo<Enum, String>::iterator::operator!=(EnumInfo::iterator other)
 {
     return _it != other._it;
 }
