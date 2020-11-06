@@ -35,6 +35,10 @@ private:
 template<typename Enum>
 std::underlying_type_t<Enum> Adaptor<Enum>::_val = 0;
 
+/**
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 constexpr bool isIdentChar(char c)
 {
     return (c >= 'A' && c <= 'Z') ||
@@ -88,6 +92,10 @@ private:
     const Enum* values;
     const size_t size;
 
+    /**
+     * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+     * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+     */
     constexpr void parseNames(const Enum* vals, size_t valsCount, const char* rawNames, size_t rawNamesSize)
     {
         enum states
