@@ -1,4 +1,3 @@
-#include "EnumReflection.h"
 #include "EnumInfo.h"
 
 #include <iostream>

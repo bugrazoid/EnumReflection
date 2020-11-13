@@ -1,3 +1,6 @@
+/**
+ * @author Trubnikov Sergey <bugrazoid@gmail.com>
+ */
 #pragma once
 
 #include <string>
@@ -7,6 +10,7 @@
 #include <type_traits>
 #include <optional>
 #include <stdexcept>
+#include <assert.h>
 
 
 template<typename Enum, typename String>
@@ -115,7 +119,7 @@ private:
             switch (state)
             {
             case state_start:
-                if (IsIdentChar(*end))
+                if (isIdentChar(*end))
                 {
                     state = state_ident;
                     begin = end;
@@ -123,7 +127,7 @@ private:
                 ++end;
                 break;
             case state_ident:
-                if (!IsIdentChar(*end))
+                if (!isIdentChar(*end))
                 {
                     state = state_skip;
                     assert(value_index < valsCount);
@@ -164,36 +168,64 @@ private:
 
 } // namespace _enum_info_private
 
-// Declare an enumeration inside a class
+/**
+ * @brief Declare an enumeration inside a class
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 #define ENUM_DECLARE( enumName, enumType, ... )\
                               ENUM_INFO_DETAIL_MAKE( class, enumName, enumType, __VA_ARGS__ )
 
-// Declare an enumeration inside a namespace
+/**
+ * @brief Declare an enumeration inside a namespace
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 #define ENUM_DECLARE_NS( enumName, enumType, ... )\
                               ENUM_INFO_DETAIL_MAKE( namespace, enumName, enumType, __VA_ARGS__ )
 
+/**
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 #define ENUM_INFO_DETAIL_SPEC_namespace \
     extern "C"{/* Protection from being used inside a class body */} \
     inline
+
+/**
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 #define ENUM_INFO_DETAIL_SPEC_class friend
+
+/**
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
 #define ENUM_INFO_DETAIL_STR(x) #x
-#define ENUM_INFO_DETAIL_MAKE(spec, enumName, enumType, ...)\
-    enum enumName:enumType                              \
-    {                                                       \
-        __VA_ARGS__                                             \
-    };                                                              \
-    ENUM_INFO_DETAIL_SPEC_##spec                                        \
-    const _enum_info_private::RawData<enumName>& getRawData(enumName = enumName())        \
-    {                                                                           \
-        constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);   \
-        constexpr const size_t enumNameStrSize = sizeof(ENUM_INFO_DETAIL_STR(enumName)); \
-        static const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                                            \
-        static const enumName vals[] = { __VA_ARGS__ };                                            \
+
+/**
+ * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
+ * <a href="https://github.com/thedsi/EnumReflection/blob/master/LICENSE.txt">LICENSE.txt</a>
+ */
+#define ENUM_INFO_DETAIL_MAKE(spec, enumName, enumType, ...)                                    \
+    enum enumName:enumType                                                                      \
+    {                                                                                           \
+        __VA_ARGS__                                                                             \
+    };                                                                                          \
+    ENUM_INFO_DETAIL_SPEC_##spec                                                                \
+    const _enum_info_private::RawData<enumName>& getRawData(enumName = enumName())              \
+    {                                                                                           \
+        constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);               \
+        constexpr const size_t enumNameStrSize = sizeof(ENUM_INFO_DETAIL_STR(enumName));        \
+        static const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                         \
+        static const enumName vals[] = { __VA_ARGS__ };                                         \
         constexpr size_t valsCount = sizeof(vals)/sizeof(enumName);                             \
-        constexpr const char* const rawNames = ENUM_INFO_DETAIL_STR((__VA_ARGS__));                 \
-        constexpr const size_t rawNamesSize = sizeof (ENUM_INFO_DETAIL_STR((__VA_ARGS__))) - 1;         \
-        static const _enum_info_private::RawData<enumName> rawData(enumNameStr, enumNameStrSize, vals, valsCount, rawNames, rawNamesSize); \
-        return rawData;                                                                              \
+        constexpr const char* const rawNames = ENUM_INFO_DETAIL_STR((__VA_ARGS__));             \
+        constexpr const size_t rawNamesSize = sizeof (ENUM_INFO_DETAIL_STR((__VA_ARGS__))) - 1; \
+        static const _enum_info_private::RawData<enumName> rawData(                             \
+            enumNameStr, enumNameStrSize, vals, valsCount, rawNames, rawNamesSize);             \
+        return rawData;                                                                         \
     }
 
 template<typename Enum, typename String = std::string_view>
@@ -201,14 +233,16 @@ class EnumInfo
 {
 public:
     using EnumType = std::underlying_type_t<Enum>;
-    static String      name();
-    static size_t                size();
-    static std::optional<String> valueName(Enum value);
-    static std::optional<String> valueName(size_t index);
-    static std::optional<Enum>             value(String name);
-    static std::optional<Enum>             value(size_t index);
-    static std::optional<size_t>           index(Enum value);
-    static std::optional<size_t>           index(String name);
+
+    static String   name();
+    static size_t   size();
+
+    static std::optional<String>    valueName(Enum value);
+    static std::optional<String>    valueName(size_t index);
+    static std::optional<Enum>      value(String name);
+    static std::optional<Enum>      value(size_t index);
+    static std::optional<EnumType>  index(Enum value);
+    static std::optional<EnumType>  index(String name);
 
     struct iterator
     {
@@ -293,13 +327,13 @@ std::optional<Enum> EnumInfo<Enum, String>::value(size_t index)
 }
 
 template<typename Enum, typename String>
-std::optional<size_t> EnumInfo<Enum, String>::index(Enum value)
+std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::index(Enum value)
 {
     return findIndex(value, _parsedData.nameByVal);
 }
 
 template<typename Enum, typename String>
-std::optional<size_t> EnumInfo<Enum, String>::index(String name)
+std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::index(String name)
 {
     return findIndex(name, _parsedData.valByName);
 }
