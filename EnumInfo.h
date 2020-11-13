@@ -241,8 +241,8 @@ public:
     static std::optional<String>    valueName(size_t index);
     static std::optional<Enum>      value(String name);
     static std::optional<Enum>      value(size_t index);
-    static std::optional<EnumType>  index(Enum value);
-    static std::optional<EnumType>  index(String name);
+    static std::optional<size_t>    index(Enum value);
+    static std::optional<size_t>    index(String name);
 
     struct iterator
     {
@@ -285,7 +285,7 @@ private:
     static std::optional<Ret> find(Key key, Cont cont);
     static iterator fromIndex(size_t index);
     template<typename Key, typename Cont>
-    static std::optional<EnumType> findIndex(Key key, Cont cont);
+    static std::optional<size_t> findIndex(Key key, Cont cont);
 };
 
 template<typename Enum, typename String>
@@ -327,13 +327,13 @@ std::optional<Enum> EnumInfo<Enum, String>::value(size_t index)
 }
 
 template<typename Enum, typename String>
-std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::index(Enum value)
+std::optional<size_t> EnumInfo<Enum, String>::index(Enum value)
 {
     return findIndex(value, _parsedData.nameByVal);
 }
 
 template<typename Enum, typename String>
-std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::index(String name)
+std::optional<size_t> EnumInfo<Enum, String>::index(String name)
 {
     return findIndex(name, _parsedData.valByName);
 }
@@ -394,7 +394,7 @@ std::optional<Ret> EnumInfo<Enum, String>::find(Key key, Cont cont)
 
 template<typename Enum, typename String>
 template<typename Key, typename Cont>
-std::optional<typename EnumInfo<Enum, String>::EnumType> EnumInfo<Enum, String>::findIndex(Key key, Cont cont)
+std::optional<size_t> EnumInfo<Enum, String>::findIndex(Key key, Cont cont)
 {
     const auto it = cont.find(key);
         if (it != cont.end())
