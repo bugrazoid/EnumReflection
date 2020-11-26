@@ -217,7 +217,7 @@ private:
     const _enum_info_private::RawData<enumName>& getRawData(enumName = enumName())              \
     {                                                                                           \
         constexpr const char* const enumNameStr = ENUM_INFO_DETAIL_STR(enumName);               \
-        constexpr const size_t enumNameStrSize = sizeof(ENUM_INFO_DETAIL_STR(enumName));        \
+        constexpr const size_t enumNameStrSize = sizeof(ENUM_INFO_DETAIL_STR(enumName)) - 1;    \
         static const _enum_info_private::Adaptor<enumName> __VA_ARGS__;                         \
         static const enumName vals[] = { __VA_ARGS__ };                                         \
         constexpr size_t valsCount = sizeof(vals)/sizeof(enumName);                             \

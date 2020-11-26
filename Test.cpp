@@ -46,6 +46,18 @@ namespace AnotherNamespace
     }
 }
 
+namespace ns
+{
+struct Cs
+{
+    ENUM_DECLARE(Color, uint16_t,
+                 Transparent = 0,
+                 Red,
+                 Green,
+                 Blue)
+};
+}
+
 template<typename Enum>
 void printEnum()
 {
@@ -61,9 +73,23 @@ void printEnum()
     std::cout << "Enum size is " << EnumInfo<Enum>::size() << std::endl << std::endl;
 }
 
+template<typename Enum>
+bool testName(const std::string_view name)
+{
+    const bool sameName = name == EnumInfo<Enum>::name();
+    if (!sameName)
+    {
+        std::cerr << "Enum name \"" << EnumInfo<Enum>::name()
+                  << "\" not equal to \"" << name << "\"" << std::endl;
+    }
+
+    return sameName;
+}
+
 
 int main()
 {
+    //--- Examples ---
     printEnum<SomeClass::TasteFlags>();
 
     std::cout << "Index for " << EnumInfo<SomeClass::TasteFlags>::valueName(SomeClass::TasteFlags::Sour).value_or("ERROR")
@@ -80,4 +106,23 @@ int main()
     std::cout << std::endl;
 
     printEnum<CardSuit>();
+    std::cout << std::endl;
+    printEnum<ns::Cs::Color>();
+
+
+    const auto printOkFail = [](bool isOk)
+    {
+        return isOk ? "[OK]" : "[FAIL]";
+    };
+
+    //--- Tests ---
+    std::cout << "Start tests..." << std::endl;
+
+    std::cout << "Enum name test..." << std::endl;
+    const bool isTestNameOk = true
+    && testName<CardSuit>("CardSuit")
+    && testName<SomeClass::TasteFlags>("TasteFlags")
+    && testName<SomeNamespace::Ports>("Ports")
+    && testName<ns::Cs::Color>("Color");
+    std::cout << "Enum name test is " << printOkFail(isTestNameOk) << std::endl;
 }
