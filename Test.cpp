@@ -50,9 +50,9 @@ namespace ns
 {
 struct Cs
 {
-    ENUM_DECLARE(Color, uint16_t,
-                 Transparent = 0,
-                 Red,
+    ENUM_DECLARE(Color, int16_t,
+                 Transparent = -1,
+                 Red = 1,
                  Green,
                  Blue)
 };
@@ -84,6 +84,19 @@ bool testName(const std::string_view name)
     }
 
     return sameName;
+}
+
+template<typename Enum>
+bool testSize(size_t size)
+{
+    const bool sameSize = size == EnumInfo<Enum>::size();
+    if (!sameSize)
+    {
+        std::cerr << "Enum size \"" << EnumInfo<Enum>::name()
+                  << "\" not equal to \"" << size << "\"" << std::endl;
+    }
+
+    return sameSize;
 }
 
 
@@ -120,9 +133,17 @@ int main()
 
     std::cout << "Enum name test..." << std::endl;
     const bool isTestNameOk = true
-    && testName<CardSuit>("CardSuit")
-    && testName<SomeClass::TasteFlags>("TasteFlags")
-    && testName<SomeNamespace::Ports>("Ports")
-    && testName<ns::Cs::Color>("Color");
+                              && testName<CardSuit>("CardSuit")
+                              && testName<SomeClass::TasteFlags>("TasteFlags")
+                              && testName<SomeNamespace::Ports>("Ports")
+                              && testName<ns::Cs::Color>("Color");
     std::cout << "Enum name test is " << printOkFail(isTestNameOk) << std::endl;
+
+    std::cout << "Enum size test..." << std::endl;
+    const bool isTestSizeOk = true
+                              && testSize<CardSuit>(4)
+                              && testSize<SomeClass::TasteFlags>(7)
+                              && testSize<SomeNamespace::Ports>(4)
+                              && testSize<ns::Cs::Color>(4);
+    std::cout << "Enum size test is " << printOkFail(isTestSizeOk) << std::endl;
 }
