@@ -25,7 +25,7 @@ struct Adaptor
     Enum val;
     constexpr operator Enum() const {return val;}
 
-    constexpr Adaptor() : val(static_cast<Enum>(++_val)) {}
+    constexpr Adaptor() : val(static_cast<Enum>(_val.has_value() ? ++(*_val) : 0)) {}
     template<typename U>
     constexpr Adaptor(U i) : val(static_cast<Enum>(i)) {_val = i;}
 
@@ -33,11 +33,11 @@ struct Adaptor
     constexpr const Adaptor operator=(const U) const {return *this;}
 
 private:
-    static std::underlying_type_t<Enum> _val;
+    static std::optional<std::underlying_type_t<Enum>> _val;
 };
 
 template<typename Enum>
-std::underlying_type_t<Enum> Adaptor<Enum>::_val = 0;
+std::optional<std::underlying_type_t<Enum>> Adaptor<Enum>::_val = std::nullopt;
 
 /**
  * @author Yakov Litvitskiy <thedsi100@gmail.com> (c) 2016
