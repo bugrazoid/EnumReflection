@@ -25,7 +25,11 @@ struct Adaptor
     Enum val;
     constexpr operator Enum() const {return val;}
 
-    constexpr Adaptor() : val(static_cast<Enum>(_val.has_value() ? ++(*_val) : 0)) {}
+    constexpr Adaptor() : val(static_cast<Enum>([]
+    {
+        _val = _val.has_value() ? *_val + 1 : 0;
+        return *_val;
+    }())) {}
     template<typename U>
     constexpr Adaptor(U i) : val(static_cast<Enum>(i)) {_val = i;}
 
