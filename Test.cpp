@@ -73,6 +73,20 @@ void printEnum()
     std::cout << "Enum size is " << EnumInfo<Enum>::size() << std::endl << std::endl;
 }
 
+template<typename F>
+bool test(std::string_view testName, F testFunc)
+{
+    const auto printOkFail = [](bool isOk)
+    {
+        return isOk ? "[OK]" : "[FAIL]";
+    };
+
+    std::cout << "\"" << testName << "\" test ...";
+    const bool isOk = testFunc();
+    std::cout << "\b\b\bdone with " << printOkFail(isOk) << std::endl;
+    return isOk;
+}
+
 template<typename Enum>
 bool testName(const std::string_view name)
 {
@@ -99,6 +113,25 @@ bool testSize(size_t size)
     return sameSize;
 }
 
+template<typename Enum>
+bool testValueNameByValue(Enum value, std::string_view valueName)
+{
+    const auto name = EnumInfo<Enum>::valueName(value);
+    if (!name.has_value())
+    {
+        std::cerr << "Value name not found for \"" << valueName << "\"" << std::endl;
+        return false;
+    }
+    const bool isSame = *name == valueName;
+    if (!isSame)
+    {
+        std::cerr << "Enum value name \"" << *name
+                  << "\" not equal to \"" << valueName << "\"" << std::endl;
+    }
+
+    return isSame;
+}
+
 
 int main()
 {
@@ -123,27 +156,26 @@ int main()
     printEnum<ns::Cs::Color>();
 
 
-    const auto printOkFail = [](bool isOk)
-    {
-        return isOk ? "[OK]" : "[FAIL]";
-    };
 
     //--- Tests ---
     std::cout << "Start tests..." << std::endl;
 
-    std::cout << "Enum name test..." << std::endl;
-    const bool isTestNameOk = true
-                              && testName<CardSuit>("CardSuit")
-                              && testName<SomeClass::TasteFlags>("TasteFlags")
-                              && testName<SomeNamespace::Ports>("Ports")
-                              && testName<ns::Cs::Color>("Color");
-    std::cout << "Enum name test is " << printOkFail(isTestNameOk) << std::endl;
+    test("Enum name", []
+    {
+        return true
+                && testName<CardSuit>("CardSuit")
+                && testName<SomeClass::TasteFlags>("TasteFlags")
+                && testName<SomeNamespace::Ports>("Ports")
+                && testName<ns::Cs::Color>("Color");
+    });
 
-    std::cout << "Enum size test..." << std::endl;
-    const bool isTestSizeOk = true
-                              && testSize<CardSuit>(4)
-                              && testSize<SomeClass::TasteFlags>(7)
-                              && testSize<SomeNamespace::Ports>(4)
-                              && testSize<ns::Cs::Color>(4);
-    std::cout << "Enum size test is " << printOkFail(isTestSizeOk) << std::endl;
+    test("Enum size", []
+    {
+        return true
+                && testSize<CardSuit>(4)
+                && testSize<SomeClass::TasteFlags>(7)
+                && testSize<SomeNamespace::Ports>(4)
+                && testSize<ns::Cs::Color>(4);
+    });
+
 }
