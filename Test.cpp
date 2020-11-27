@@ -178,4 +178,29 @@ int main()
                 && testSize<ns::Cs::Color>(4);
     });
 
+    test("Enum value name by value", []
+    {
+        return true
+                && testValueNameByValue(CardSuit::Spades  , "Spades")
+                && testValueNameByValue(CardSuit::Hearts  , "Hearts")
+                && testValueNameByValue(CardSuit::Diamonds, "Diamonds")
+                && testValueNameByValue(CardSuit::Clubs   , "Clubs")
+                && testValueNameByValue(SomeClass::TasteFlags::None     , "None")
+                && testValueNameByValue(SomeClass::TasteFlags::Salted   , "Salted")
+                && testValueNameByValue(SomeClass::TasteFlags::Sour     , "Sour")
+                && testValueNameByValue(SomeClass::TasteFlags::Sweet    , "Sweet")
+                && testValueNameByValue(SomeClass::TasteFlags::SourSweet, "SourSweet")
+                && testValueNameByValue(SomeClass::TasteFlags::Other    , "Other")
+                && testValueNameByValue(SomeClass::TasteFlags::Last     , "Last")
+                && testValueNameByValue(SomeNamespace::Ports::HTTP       , "HTTP")
+                && testValueNameByValue(SomeNamespace::Ports::HTTPS      , "HTTPS")
+                && testValueNameByValue(SomeNamespace::Ports::SecureShell, "SecureShell")
+                // Because "SecureShell" comes first and it is same as SSH here 'SSH' value returns "SecureShell" name
+                && testValueNameByValue(SomeNamespace::Ports::SSH        , "SecureShell")
+                && testValueNameByValue(ns::Cs::Color::Transparent, "Transparent")
+                && testValueNameByValue(ns::Cs::Color::Red        , "Red")
+                && testValueNameByValue(ns::Cs::Color::Green      , "Green")
+                && testValueNameByValue(ns::Cs::Color::Blue       , "Blue")
+                ;
+    });
 }
