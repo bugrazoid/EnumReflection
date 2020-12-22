@@ -338,13 +338,21 @@ std::optional<Enum> EnumInfo<Enum, String>::value(size_t index)
 template<typename Enum, typename String>
 std::optional<size_t> EnumInfo<Enum, String>::index(Enum value)
 {
+    for (size_t i = 0; i < _parsedData.size; ++i)
+    {
+        if (_parsedData.values[i] == value)
+            return i;
+    }
     return std::nullopt;
 }
 
 template<typename Enum, typename String>
 std::optional<size_t> EnumInfo<Enum, String>::index(String name)
 {
-    return findIndex(name, _parsedData.valByName);
+    const auto it = std::find(_parsedData.names.begin(), _parsedData.names.end(), name);
+    if (it == _parsedData.names.end())
+        return std::nullopt;
+    return std::distance(_parsedData.names.begin(), it);
 }
 
 template<typename Enum, typename String>
