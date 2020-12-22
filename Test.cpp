@@ -81,9 +81,9 @@ bool test(std::string_view testName, F testFunc)
         return isOk ? "[OK]" : "[FAIL]";
     };
 
-    std::cout << "\"" << testName << "\" test ...";
+    std::cout << "\"" << testName << "\" test ... ";
     const bool isOk = testFunc();
-    std::cout << "\b\b\bdone with " << printOkFail(isOk) << std::endl;
+    std::cout << "\b\b\b\bdone with " << printOkFail(isOk) << std::endl;
     return isOk;
 }
 
@@ -188,6 +188,47 @@ bool testValueByIndex(size_t index, Enum value)
         std::cerr << "Enum value \"" << static_cast<std::underlying_type_t<Enum>>(*opt)
                   << "\" not equal to \"" << static_cast<std::underlying_type_t<Enum>>(value) << "\" for index == "
                   << index << std::endl;
+    }
+
+    return isSame;
+}
+
+template<typename Enum>
+bool testIndexByValue(size_t index, Enum value)
+{
+    const auto valueName = EnumInfo<Enum>::valueName(value).value();
+    const auto opt = EnumInfo<Enum>::index(value);
+    if (!opt.has_value())
+    {
+        std::cerr << "Index not found for \"" <<  valueName << std::endl;
+        return false;
+    }
+    const bool isSame = *opt == index;
+    if (!isSame)
+    {
+        std::cerr << "Enum index \"" << static_cast<std::underlying_type_t<Enum>>(*opt)
+                  << "\" not equal to \"" << index << "\" for value "
+                  <<  valueName << std::endl;
+    }
+
+    return isSame;
+}
+
+template<typename Enum>
+bool testIndexByValueName(size_t index, std::string_view valueName)
+{
+    const auto opt = EnumInfo<Enum>::index(valueName);
+    if (!opt.has_value())
+    {
+        std::cerr << "Index not found for \"" << valueName << std::endl;
+        return false;
+    }
+    const bool isSame = *opt == index;
+    if (!isSame)
+    {
+        std::cerr << "Enum index \"" << *opt
+                  << "\" not equal to \"" << index << "\" for "
+                  << valueName << std::endl;
     }
 
     return isSame;
@@ -337,6 +378,57 @@ int main()
                 && testValueByIndex(1, ns::Cs::Color::Red)
                 && testValueByIndex(2, ns::Cs::Color::Green)
                 && testValueByIndex(3, ns::Cs::Color::Blue)
+                ;
+    });
+
+    test("Enum index by value", []
+    {
+        return true
+                && testIndexByValue(0, CardSuit::Spades)
+                && testIndexByValue(1, CardSuit::Hearts)
+                && testIndexByValue(2, CardSuit::Diamonds)
+                && testIndexByValue(3, CardSuit::Clubs)
+                && testIndexByValue(0, SomeClass::TasteFlags::None)
+                && testIndexByValue(1, SomeClass::TasteFlags::Salted)
+                && testIndexByValue(2, SomeClass::TasteFlags::Sour)
+                && testIndexByValue(3, SomeClass::TasteFlags::Sweet)
+                && testIndexByValue(4, SomeClass::TasteFlags::SourSweet)
+                && testIndexByValue(5, SomeClass::TasteFlags::Other)
+                && testIndexByValue(6, SomeClass::TasteFlags::Last)
+                && testIndexByValue(0, SomeNamespace::Ports::HTTP)
+                && testIndexByValue(1, SomeNamespace::Ports::HTTPS)
+                && testIndexByValue(2, SomeNamespace::Ports::SecureShell)
+                // Because "SecureShell" and "SSH" has same value, than result is first matched index
+                && testIndexByValue(2, SomeNamespace::Ports::SSH)
+                && testIndexByValue(0, ns::Cs::Color::Transparent)
+                && testIndexByValue(1, ns::Cs::Color::Red)
+                && testIndexByValue(2, ns::Cs::Color::Green)
+                && testIndexByValue(3, ns::Cs::Color::Blue)
+                ;
+    });
+
+    test("Enum index by value name", []
+    {
+        return true
+                && testIndexByValueName<CardSuit>(0, "Spades")
+                && testIndexByValueName<CardSuit>(1, "Hearts")
+                && testIndexByValueName<CardSuit>(2, "Diamonds")
+                && testIndexByValueName<CardSuit>(3, "Clubs")
+                && testIndexByValueName<SomeClass::TasteFlags>(0, "None")
+                && testIndexByValueName<SomeClass::TasteFlags>(1, "Salted")
+                && testIndexByValueName<SomeClass::TasteFlags>(2, "Sour")
+                && testIndexByValueName<SomeClass::TasteFlags>(3, "Sweet")
+                && testIndexByValueName<SomeClass::TasteFlags>(4, "SourSweet")
+                && testIndexByValueName<SomeClass::TasteFlags>(5, "Other")
+                && testIndexByValueName<SomeClass::TasteFlags>(6, "Last")
+                && testIndexByValueName<SomeNamespace::Ports>(0, "HTTP")
+                && testIndexByValueName<SomeNamespace::Ports>(1, "HTTPS")
+                && testIndexByValueName<SomeNamespace::Ports>(2, "SecureShell")
+                && testIndexByValueName<SomeNamespace::Ports>(3, "SSH")
+                && testIndexByValueName<ns::Cs::Color>(0, "Transparent")
+                && testIndexByValueName<ns::Cs::Color>(1, "Red")
+                && testIndexByValueName<ns::Cs::Color>(2, "Green")
+                && testIndexByValueName<ns::Cs::Color>(3, "Blue")
                 ;
     });
 }
