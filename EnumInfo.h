@@ -246,6 +246,7 @@ public:
 
     static std::optional<String>    valueName(Enum value);
     static std::optional<String>    valueName(size_t index);
+    // TODO: valueNames & aliases
     static std::optional<Enum>      value(String name);
     static std::optional<Enum>      value(size_t index);
     static std::optional<size_t>    index(Enum value);
@@ -291,8 +292,6 @@ private:
     template<typename Ret, typename Key, typename Cont>
     static std::optional<Ret> find(Key key, Cont cont);
     static iterator fromIndex(size_t index);
-    template<typename Key, typename Cont>
-    static std::optional<size_t> findIndex(Key key, Cont cont);
 };
 
 template<typename Enum, typename String>
@@ -331,14 +330,15 @@ std::optional<Enum> EnumInfo<Enum, String>::value(String name)
 template<typename Enum, typename String>
 std::optional<Enum> EnumInfo<Enum, String>::value(size_t index)
 {
-    const iterator it = fromIndex(index);
-    return it.value();
+    if (index >= _parsedData.size)
+        return std::nullopt;
+    return _parsedData.values[index];
 }
 
 template<typename Enum, typename String>
 std::optional<size_t> EnumInfo<Enum, String>::index(Enum value)
 {
-    return findIndex(value, _parsedData.nameByVal);
+    return std::nullopt;
 }
 
 template<typename Enum, typename String>
@@ -399,27 +399,6 @@ std::optional<Ret> EnumInfo<Enum, String>::find(Key key, Cont cont)
     }
 
     return std::nullopt;
-}
-
-template<typename Enum, typename String>
-template<typename Key, typename Cont>
-std::optional<size_t> EnumInfo<Enum, String>::findIndex(Key key, Cont cont)
-{
-    const auto it = cont.find(key);
-        if (it != cont.end())
-        {
-            size_t i = 0;
-            auto in = cont.begin();
-            while (in != cont.end())
-            {
-                if (in == it)
-                    return i;
-                ++in;
-                ++i;
-            }
-        }
-
-        return std::nullopt;
 }
 
 // ---- EnumInfo::iterator implementation ----
