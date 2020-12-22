@@ -132,6 +132,27 @@ bool testValueNameByValue(Enum value, std::string_view valueName)
     return isSame;
 }
 
+template<typename Enum>
+bool testValueNameByIndex(size_t index, std::string_view valueName)
+{
+    const auto name = EnumInfo<Enum>::valueName(index);
+    if (!name.has_value())
+    {
+        std::cerr << "Value name not found for \"" << valueName << "\" and index == "
+                  << index << std::endl;
+        return false;
+    }
+    const bool isSame = *name == valueName;
+    if (!isSame)
+    {
+        std::cerr << "Enum value name \"" << *name
+                  << "\" not equal to \"" << valueName << "\" for index == "
+                  << index << std::endl;
+    }
+
+    return isSame;
+}
+
 
 int main()
 {
@@ -201,6 +222,31 @@ int main()
                 && testValueNameByValue(ns::Cs::Color::Red        , "Red")
                 && testValueNameByValue(ns::Cs::Color::Green      , "Green")
                 && testValueNameByValue(ns::Cs::Color::Blue       , "Blue")
+                ;
+    });
+
+    test("Enum value by index", []
+    {
+        return true
+                && testValueNameByIndex<CardSuit>(0, "Spades")
+                && testValueNameByIndex<CardSuit>(1, "Hearts")
+                && testValueNameByIndex<CardSuit>(2, "Diamonds")
+                && testValueNameByIndex<CardSuit>(3, "Clubs")
+                && testValueNameByIndex<SomeClass::TasteFlags>(0, "None")
+                && testValueNameByIndex<SomeClass::TasteFlags>(1, "Salted")
+                && testValueNameByIndex<SomeClass::TasteFlags>(2, "Sour")
+                && testValueNameByIndex<SomeClass::TasteFlags>(3, "Sweet")
+                && testValueNameByIndex<SomeClass::TasteFlags>(4, "SourSweet")
+                && testValueNameByIndex<SomeClass::TasteFlags>(5, "Other")
+                && testValueNameByIndex<SomeClass::TasteFlags>(6, "Last")
+                && testValueNameByIndex<SomeNamespace::Ports>(0, "HTTP")
+                && testValueNameByIndex<SomeNamespace::Ports>(1, "HTTPS")
+                && testValueNameByIndex<SomeNamespace::Ports>(2, "SecureShell")
+                && testValueNameByIndex<SomeNamespace::Ports>(3, "SSH")
+                && testValueNameByIndex<ns::Cs::Color>(0, "Transparent")
+                && testValueNameByIndex<ns::Cs::Color>(1, "Red")
+                && testValueNameByIndex<ns::Cs::Color>(2, "Green")
+                && testValueNameByIndex<ns::Cs::Color>(3, "Blue")
                 ;
     });
 }
