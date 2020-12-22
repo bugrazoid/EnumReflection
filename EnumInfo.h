@@ -82,6 +82,7 @@ struct ParsedData
         , values(vals)
         , size(valsCount)
     {
+        names.reserve(size);
         parseNames(vals, valsCount, rawNames, rawNamesSize);
     }
     constexpr ParsedData(RawData<Enum> rawData)
@@ -95,6 +96,7 @@ struct ParsedData
 
 private:
     String enumName;
+    std::vector<String> names;
     std::multimap<Enum, String> nameByVal;
     std::unordered_map<String, Enum> valByName;
     const Enum* values;
@@ -137,6 +139,7 @@ private:
                     assert(value_index < valsCount);
                     const auto value = vals[value_index];
                     const String string(begin, size_t(end - begin));
+                    names.push_back(string);
                     nameByVal.emplace(value, string);
                     valByName.emplace(string, value);
                     ++value_index;
@@ -259,15 +262,15 @@ public:
 
         size_t index();
         Enum value();
-        String name();
+        String name() const;
 
         value_type      operator*();
         iterator&       operator++();
         iterator        operator++(difference_type);
         iterator&       operator--();
         iterator        operator--(difference_type);
-        bool            operator==(iterator);
-        bool            operator!=(iterator);
+        bool            operator==(iterator) const;
+        bool            operator!=(iterator) const;
 
     private:
         typename _enum_info_private::ParsedData<Enum, String>::iterator _it;
@@ -313,8 +316,10 @@ std::optional<String> EnumInfo<Enum, String>::valueName(Enum value)
 template<typename Enum, typename String>
 std::optional<String> EnumInfo<Enum, String>::valueName(size_t index)
 {
-    const iterator it = fromIndex(index);
-    return it.name();
+    if (index >= _parsedData.names.size())
+        return std::nullopt;
+
+    return _parsedData.names[index];
 }
 
 template<typename Enum, typename String>
@@ -447,7 +452,7 @@ Enum EnumInfo<Enum, String>::iterator::value()
 }
 
 template<typename Enum, typename String>
-String EnumInfo<Enum, String>::iterator::name()
+String EnumInfo<Enum, String>::iterator::name() const
 {
     return  _it->second;
 }
@@ -495,13 +500,13 @@ typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::iterator::oper
 }
 
 template<typename Enum, typename String>
-bool EnumInfo<Enum, String>::iterator::operator==(EnumInfo::iterator other)
+bool EnumInfo<Enum, String>::iterator::operator==(EnumInfo::iterator other) const
 {
     return _it == other._it;
 }
 
 template<typename Enum, typename String>
-bool EnumInfo<Enum, String>::iterator::operator!=(EnumInfo::iterator other)
+bool EnumInfo<Enum, String>::iterator::operator!=(EnumInfo::iterator other) const
 {
     return _it != other._it;
 }
