@@ -91,7 +91,6 @@ struct ParsedData
                      rawData._rawNames, rawData._rawNamesSize)
     {}
 
-    using iterator = typename std::map<Enum, String>::const_iterator;
     friend EnumInfo<Enum, String>;
 
 private:
@@ -259,7 +258,6 @@ public:
         using difference_type = std::ptrdiff_t;
 
         iterator() = delete;
-        explicit iterator(typename _enum_info_private::ParsedData<Enum, String>::iterator it);
 
         size_t index();
         Enum value();
@@ -274,7 +272,10 @@ public:
         bool            operator!=(iterator) const;
 
     private:
-        typename _enum_info_private::ParsedData<Enum, String>::iterator _it;
+        friend EnumInfo;
+        explicit iterator(const _enum_info_private::ParsedData<Enum, String>* const parsedData, size_t index);
+
+        const _enum_info_private::ParsedData<Enum, String>* const _parsedData;
         size_t _index;
     };
 
@@ -364,13 +365,13 @@ size_t EnumInfo<Enum, String>::size()
 template<typename Enum, typename String>
 typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::begin()
 {
-    return iterator(_parsedData.nameByVal.begin());
+    return iterator(&_parsedData, 0);
 }
 
 template<typename Enum, typename String>
 typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::end()
 {
-    return iterator(_parsedData.nameByVal.end());
+    return iterator(&_parsedData, size());
 }
 
 template<typename Enum, typename String>
@@ -412,18 +413,12 @@ std::optional<Ret> EnumInfo<Enum, String>::find(Key key, Cont cont)
 // ---- EnumInfo::iterator implementation ----
 
 template<typename Enum, typename String>
-EnumInfo<Enum, String>::iterator::iterator(typename _enum_info_private::ParsedData<Enum, String>::iterator it)
-    : _it(it)
-    , _index(0)
+EnumInfo<Enum, String>::iterator::iterator(const _enum_info_private::ParsedData<Enum, String>* const parsedData, size_t index)
+    : _parsedData(parsedData)
+    , _index(index)
 {
-    auto current = EnumInfo<Enum, String>::_parsedData.nameByVal.begin();
-    while (current != _it)
-    {
-        if (_index == EnumInfo<Enum, String>::size())
-            std::out_of_range("Something gonna wrong!");
-        ++current;
-        ++_index;
-    }
+    assert(_parsedData != nullptr);
+    assert(_index <= _parsedData->size);
 }
 
 template<typename Enum, typename String>
@@ -435,13 +430,13 @@ size_t EnumInfo<Enum, String>::iterator::index()
 template<typename Enum, typename String>
 Enum EnumInfo<Enum, String>::iterator::value()
 {
-    return _it->first;
+    return _parsedData->values[_index];
 }
 
 template<typename Enum, typename String>
 String EnumInfo<Enum, String>::iterator::name() const
 {
-    return  _it->second;
+    return  _parsedData->names[_index];
 }
 
 template<typename Enum, typename String>
@@ -454,7 +449,6 @@ typename EnumInfo<Enum, String>::iterator::value_type EnumInfo<Enum, String>::it
 template<typename Enum, typename String>
 typename EnumInfo<Enum, String>::iterator& EnumInfo<Enum, String>::iterator::operator++()
 {
-    ++_it;
     ++_index;
     return *this;
 }
@@ -472,7 +466,6 @@ typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::iterator::oper
 template<typename Enum, typename String>
 typename EnumInfo<Enum, String>::iterator& EnumInfo<Enum, String>::iterator::operator--()
 {
-    --_it;
     --_index;
     return *this;
 }
@@ -489,11 +482,12 @@ typename EnumInfo<Enum, String>::iterator EnumInfo<Enum, String>::iterator::oper
 template<typename Enum, typename String>
 bool EnumInfo<Enum, String>::iterator::operator==(EnumInfo::iterator other) const
 {
-    return _it == other._it;
+    return _parsedData == other._parsedData
+           && _index == other._index;
 }
 
 template<typename Enum, typename String>
 bool EnumInfo<Enum, String>::iterator::operator!=(EnumInfo::iterator other) const
 {
-    return _it != other._it;
+    return !(*this == other);
 }
