@@ -234,6 +234,43 @@ bool testIndexByValueName(size_t index, std::string_view valueName)
     return isSame;
 }
 
+template<typename Enum>
+bool testIterator(std::vector<std::pair<Enum, std::string>> etalon)
+{
+    if (EnumInfo<Enum>::size() != etalon.size())
+    {
+        std::cerr << "Size mismatch! Enum size: " << EnumInfo<Enum>::size()
+                  << ", etalon size: " << etalon.size();
+        return false;
+    }
+
+    bool isOK = true;
+    size_t i = 0;
+    for (auto it: EnumInfo<Enum>())
+    {
+        isOK = isOK
+               && it.index() == i
+               && it.value() == etalon[i].first
+               && it.name()  == etalon[i].second;
+
+        if (!isOK)
+        {
+            if (it.index() != i)
+                std::cerr << "Index mismatch! Current index: " << i
+                          << ", iterator index: " << it.index() << std::endl;
+            if (it.value() != etalon[i].first)
+                std::cerr << "Value mismatch! Etalon value: " << static_cast<std::underlying_type_t<Enum>>(etalon[i].first)
+                          << ", iterator name: " << static_cast<std::underlying_type_t<Enum>>(it.value()) << std::endl;
+            if (it.name() != etalon[i].second)
+                            std::cerr << "Name mismatch! Etalon name: " << etalon[i].second
+                                      << ", iterator name: " << it.name() << std::endl;
+            return false;
+        }
+        ++i;
+    }
+    return isOK;
+}
+
 
 int main()
 {
@@ -429,6 +466,40 @@ int main()
                 && testIndexByValueName<ns::Cs::Color>(1, "Red")
                 && testIndexByValueName<ns::Cs::Color>(2, "Green")
                 && testIndexByValueName<ns::Cs::Color>(3, "Blue")
+                ;
+    });
+
+    test("Enum iterator", []
+    {
+        return true
+                && testIterator<CardSuit>({
+                                              {CardSuit::Spades  , "Spades"  },
+                                              {CardSuit::Hearts  , "Hearts"  },
+                                              {CardSuit::Diamonds, "Diamonds"},
+                                              {CardSuit::Clubs   , "Clubs"   }
+                                          })
+                && testIterator<SomeClass::TasteFlags>({
+                                                           {SomeClass::TasteFlags::None     , "None"     },
+                                                           {SomeClass::TasteFlags::Salted   , "Salted"   },
+                                                           {SomeClass::TasteFlags::Sour     , "Sour"     },
+                                                           {SomeClass::TasteFlags::Sweet    , "Sweet"    },
+                                                           {SomeClass::TasteFlags::SourSweet, "SourSweet"},
+                                                           {SomeClass::TasteFlags::Other    , "Other"    },
+                                                           {SomeClass::TasteFlags::Last     , "Last"     }
+                                                       })
+                && testIterator<SomeNamespace::Ports>({
+                                                          {SomeNamespace::Ports::HTTP       , "HTTP"       },
+                                                          {SomeNamespace::Ports::HTTPS      , "HTTPS"      },
+                                                          {SomeNamespace::Ports::SecureShell, "SecureShell"},
+                                                          {SomeNamespace::Ports::SSH        , "SSH"        }
+                                                      })
+                && testIterator<ns::Cs::Color>({
+
+                                                   {ns::Cs::Color::Transparent, "Transparent"},
+                                                   {ns::Cs::Color::Red        , "Red"        },
+                                                   {ns::Cs::Color::Green      , "Green"      },
+                                                   {ns::Cs::Color::Blue       , "Blue"       }
+                                               })
                 ;
     });
 }
